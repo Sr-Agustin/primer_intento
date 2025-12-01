@@ -1,7 +1,6 @@
 from fastapi import FastAPI
+from routers.transcriptions import router as transcriptions_router
 
 app = FastAPI()
 
-@app.get("/")
-def root():
-    return {"message": "Backend funcionando!"}
+app.include_router(transcriptions_router, prefix="/api")
