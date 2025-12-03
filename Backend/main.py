@@ -15,7 +15,8 @@ app = FastAPI()
 @app.post("/register", response_model=schemas.UserResponse)
 def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
     # Verificar email
-    if crud.get_user_by_email(db, user.email):
+    existing_user = crud.get_user_by_email(db, user.email)
+    if existing_user:
         raise HTTPException(status_code=400, detail="Email ya registrado")
 
     # Verificar username
