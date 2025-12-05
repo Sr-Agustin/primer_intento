@@ -1,13 +1,18 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-
+from fastapi.security import OAuth2PasswordRequestForm
 from Backend import models, schemas, crud, database
 from Backend.auth import create_access_token, verify_password
+from Backend.routers import appointments
+
+app = FastAPI()  #  Crear app primero
+
+# Registrar routers
+app.include_router(appointments.router)
 
 # Crear las tablas
 models.Base.metadata.create_all(bind=database.engine)
 
-app = FastAPI()
 
 # ==============================
 # REGISTER
@@ -31,35 +36,32 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
 # ==============================
 # LOGIN
 # ==============================
+
+
 @app.post("/login")
-def login(user: schemas.UserLogin, db: Session = Depends(database.get_db)):
-    db_user = crud.get_user_by_email(db, user.email)
+def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
+    db_user = crud.get_user_by_email(db, form_data.username)
 
     if not db_user:
         raise HTTPException(status_code=400, detail="Email incorrecto")
 
-    # Verificar password
-    if not verify_password(user.password, db_user.hashed_password):
+    if not verify_password(form_data.password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Contraseña incorrecta")
 
-    # Crear token
     token = create_access_token({"sub": db_user.email})
 
     return {
         "access_token": token,
         "token_type": "bearer",
-        "user": {
-            "id": db_user.id,
-            "username": db_user.username,
-            "email": db_user.email,
-        },
     }
+
 
 
 # ==============================
 # PROTECTED ROUTE EXAMPLE
 # ==============================
 from Backend.dependencies import get_current_user
+
 @app.get("/protected")
 def protected_route(current_user = Depends(get_current_user)):
     return {"message": "Acceso permitido", "user": current_user.email}
