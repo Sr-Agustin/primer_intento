@@ -7,7 +7,7 @@ from Backend.auth_utils import get_current_user
 router = APIRouter(
     prefix="/appointments",
     tags=["Appointments"],
-    dependencies=[Depends(get_current_user)]
+    
 )
 
 
