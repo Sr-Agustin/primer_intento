@@ -5,9 +5,14 @@ from sqlalchemy.orm import Session
 from Backend.database import get_db
 from Backend import crud, models
 from Backend.config import settings   # <── AGREGADO
+from fastapi.security import HTTPBasic
 
 # URL donde Swagger pide el token
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+oauth2_scheme = OAuth2PasswordBearer(
+    tokenUrl="/login",     # <--- ruta relativa correcta para login
+    scopes={},             # <--- vacíos: así Swagger no pide client_id/secret ni scopes
+)
+swagger_basic = HTTPBasic()
 
 SECRET_KEY = settings.SECRET_KEY      # <── USAMOS LA MISMA QUE auth.py
 ALGORITHM = settings.ALGORITHM        # <── IGUAL

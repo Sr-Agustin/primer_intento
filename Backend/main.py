@@ -1,9 +1,10 @@
 from fastapi import FastAPI, Depends, HTTPException
 from sqlalchemy.orm import Session
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi.security import OAuth2PasswordRequestForm, HTTPBasicCredentials
 from Backend import models, schemas, crud, database
 from Backend.auth import create_access_token, verify_password
 from Backend.routers import appointments
+from Backend.auth_utils import swagger_basic
 
 app = FastAPI()  #  Crear app primero
 
@@ -37,15 +38,21 @@ def register(user: schemas.UserCreate, db: Session = Depends(database.get_db)):
 # LOGIN
 # ==============================
 
-
 @app.post("/login")
-def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depends(database.get_db)):
-    db_user = crud.get_user_by_email(db, form_data.username)
+def login(
+    form_data: OAuth2PasswordRequestForm = Depends(OAuth2PasswordRequestForm),
+    basic: HTTPBasicCredentials = Depends(swagger_basic),
+    db: Session = Depends(database.get_db)
+):
+    username = form_data.username or basic.username
+    password = form_data.password or basic.password
+
+    db_user = crud.get_user_by_email(db, username)
 
     if not db_user:
         raise HTTPException(status_code=400, detail="Email incorrecto")
 
-    if not verify_password(form_data.password, db_user.hashed_password):
+    if not verify_password(password, db_user.hashed_password):
         raise HTTPException(status_code=400, detail="Contraseña incorrecta")
 
     token = create_access_token({"sub": db_user.email})
@@ -54,7 +61,6 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), db: Session = Depend
         "access_token": token,
         "token_type": "bearer",
     }
-
 
 
 # ==============================
